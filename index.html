@@ -19,6 +19,11 @@
             margin: auto;  
         }
 
+        .wrap {
+            position: relative;
+            height: 95vh
+        }
+
         header {
             text-align: center;
         }
@@ -91,11 +96,37 @@
             font-size: 1.1rem;
         }
 
+        button {
+            margin: auto;
+            height: 2rem;
+            text-align: center;
+        }
+
+        button.btn-speaker {
+            background-color: rgb(47, 167, 47);
+            border: none;
+            border-radius: 0.2rem;
+            margin-right: 0.9rem;
+            margin-top: 0.5rem;
+            outline: none;
+        }
+
+        button.btn-speaker:hover {
+            cursor: pointer;
+            opacity: 0.89;
+        }
+
+        p span {
+            margin-left: 3.1rem;
+        }
+
         footer {
             text-align: center;
+            font-size: 1.3rem;
             position: absolute;
             bottom: 0;
-            font-size: 1.3rem;
+            left: 3%;
+            right: 5%;
         }
 
         footer p {
@@ -111,6 +142,25 @@
                 font-size: 0.9rem;
             }
         }
+
+        @media(max-width: 350px) {
+            header h2 {
+                font-size: 1.2rem;
+            }
+
+            input[type = 'text'] {
+                font-size: 0.6rem;
+            }
+
+            .error-message {
+                font-size: 0.9rem;
+            }
+
+            .translated-word {
+                font-size: 0.7rem
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -121,6 +171,8 @@
             <h2>Valyrian Translation App</h2>
         </header>
 
+        
+
         <form action="" class="form container">
             <input type="text" class="user-input" placeholder="Please type something in english...">
             <input type="submit" value="Translate">
@@ -130,34 +182,84 @@
 
         <div class="dothraki-translation container"></div>
 
+
+        <footer class="container">
+            <p>
+                &copy; ODA 2020
+            </p>
+        </footer>
+
     </div>
 
-    <footer class="container">
-        <p>
-            &copy; ODA 2020
-        </p>
-    </footer>
+
     <script>
 
         const form = document.querySelector('.form')
         const userInput = document.querySelector('.user-input')
         const translation = document.querySelector('.dothraki-translation');
-        
+        const button = document.querySelector('button');
+        const synth = window.speechSynthesis;
 
-        const dothraki = async (words) => {
+        let voices = [];
+        
+        const getVoices = () => {
+            voices = synth.getVoices();   
+            //console.log(voices)
+        }
+
+        getVoices();
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = getVoices
+        }
+
+        let data;
+
+        const valyrian = async (words) => {
 
             try {
                 const res = await fetch(`https://api.funtranslations.com/translate/valyrian.json?text=${words}`);
 
-                const data = await res.json();
+                data = await res.json();
 
-                translation.innerHTML = `<p class = "container"> <span>${words}:</span> ${data.contents.translated}</p>`
+                
+                translation.innerHTML = `<p class = "container translated-word"> <span>${words}:</span> <button class="btn-speaker"><img src="speaker-icon.png"></button>${data.contents.translated}</p>`
 
+                console.log(translation.firstElementChild.textContent);
+                
+
+                // SPEAK FUNCTION
+                function speak() {
+                // Get the speak text
+                const speakText = new SpeechSynthesisUtterance(translation.firstElementChild.textContent)
+
+                // Speak End
+                speakText.onend = e  => {
+                    console.log('Done speaking...')
+                }
+
+                // Speak Error
+                speakText.onerror = e => {
+                    console.log('Something went wrong')
+                }
+
+                // Selected Voice
+                //const selectedVoice = voices[1]
+
+                // Speak
+                synth.speak(speakText)
+                console.log('speak function is working..')
+            }
 
             } catch (err) {
                 console.log(err);
             }
+            
+            const btnSpeaker = document.querySelector('.btn-speaker')
+
+            //Event Handler for the Voice btn
+            btnSpeaker.addEventListener('click', speak)            
         }
+
 
         const errorMessage = (msg) => {
             const wrap = document.querySelector('.wrap');
@@ -170,17 +272,15 @@
 
             setTimeout(() => document.querySelector('.error-message').remove(), 2500)
 
-
         }
 
-        
-
+        // Event Handler for the Translate btn
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (userInput.value === '') {
                 errorMessage('Bloody deserter, did you not see the input field below?');
             } else {
-                dothraki(userInput.value);
+                valyrian(userInput.value);
                 userInput.value = '';
 
             }
